@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33021.287
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Display", "Display\Display.csproj", "{75D9DF18-DDA4-4B5A-AF94-B6795580A63C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F437EDA5-0F48-49BD-9F5F-9FF71BBFE769}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Emulation", "Emulation\Emulation.csproj", "{E65EF100-1678-4262-8352-467C20B8D77F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{75D9DF18-DDA4-4B5A-AF94-B6795580A63C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75D9DF18-DDA4-4B5A-AF94-B6795580A63C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75D9DF18-DDA4-4B5A-AF94-B6795580A63C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75D9DF18-DDA4-4B5A-AF94-B6795580A63C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E65EF100-1678-4262-8352-467C20B8D77F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E65EF100-1678-4262-8352-467C20B8D77F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E65EF100-1678-4262-8352-467C20B8D77F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E65EF100-1678-4262-8352-467C20B8D77F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1BC61F36-37D2-4BC7-8FE9-5A3DAA6CBEDD}
+	EndGlobalSection
+EndGlobal

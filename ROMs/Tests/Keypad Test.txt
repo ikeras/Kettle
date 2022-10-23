@@ -1,0 +1,89 @@
+Keypad Test, by hap, 15-02-06
+
+press a chip8 key and the pressed char will light up
+if you want to do something funny, soft-reset the chip8/emulator over and over,
+and the sprite layout will become messed up ;p
+
+chip8 keypad:
+1 2 3 c
+4 5 6 d
+7 8 9 e
+a 0 b f
+
+200: 124e	jump to start
+
+initial sprite coordinate data:
+202: 0819, 0: 8,25
+204: 0101, 1: 1,1
+206: 0801, 2: 8,1
+208: 0f01, 3: 15,1
+20a: 0109, 4: 1,9
+20c: 0809, 5: 8,9
+20e: 0f09, 6: 15,9
+210: 0111, 7: 1,17
+212: 0811, 8: 8,17
+214: 0f11, 9: 15,17
+216: 0119, a: 1,25
+218: 0f19, b: 15,25
+21a: 1601, c: 22,1
+21c: 1609, d: 22,9
+21e: 1611, e: 22,17
+220: 1619, f: 22,25
+
+6*7 filled rectangle sprite data:
+222: fc
+223: fc
+224: fc
+225: fc
+226: fc
+227: fc
+228: fc
+229: 00
+
+SUB: get sprite coordinates for char [v2] into v0,v1
+22a: a202	i=202
+22c: 820e	v2<<1
+22e: f21e	i=i+v2
+230: 8206	v2>>1
+232: f165	v0,v1=mem[i]
+234: 00ee	ret
+
+SUB: save v0,v1 into mem [v2] (reverse of previous one)
+236: a202	i=202
+238: 820e	v2<<1
+23a: f21e	i=i+v2
+23c: 8206	v2>>1
+23e: f155	mem[i]=v0,v1
+240: 00ee	ret
+
+SUB: wait
+242: 6f10	vf=16
+244: ff15	timer=vf
+246: ff07	vf=timer
+248: 3f00	skip next if vf==0
+24a: 1246	jmp 246
+24c: 00ee	ret
+
+
+24e: 00e0	cls
+
+draw font
+250: 6200	v2=0
+252: 222a	call 22a
+254: f229	i=v2 font char
+256: d015	draw 4*5 font at v0,v1
+258: 70ff	v0--
+25a: 71ff	v1-- (--: block sprite around the font sprite: font=4*5, block=(4+2)*(5+2) )
+25c: 2236	call 236
+25e: 7201	v2++
+260: 3210	skip next if v2==16
+262: 1252	jmp 252
+
+main loop
+264: f20a	store pressed key into v2
+266: 222a	call 22a (get)
+268: a222	i=222 (sprite)
+26a: d017	draw at v0,v1; 7 lines
+26c: 2242	call 242 (wait)
+26e: d017	remove sprite by redrawing
+270: 1264	jmp 264

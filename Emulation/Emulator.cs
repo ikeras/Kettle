@@ -1,38 +1,80 @@
-﻿namespace Emulation;
+﻿using System.Diagnostics;
+
+namespace Emulation;
 
 public class Emulator : IChip8Emulator
 {
-    public int DisplayHeight => throw new NotImplementedException();
+    private readonly byte[] memory;
+    private readonly CPU processor;
+    private bool isExecuting;
 
-    public int DisplayWidth => throw new NotImplementedException();
+    public Emulator()
+    {
+        this.memory = new byte[4 * 1024];
+        this.processor = new CPU(this.memory);
+        this.isExecuting = false;
+    }
+
+    public int DisplayHeight => this.processor.DisplayHeight;
+
+    public int DisplayWidth => this.processor.DisplayWidth;
 
     public uint[] GetDisplay()
     {
-        throw new NotImplementedException();
+        return this.processor.GetDisplay();
     }
 
-    public Task LoadRomAsync(string path)
+    public async Task LoadRomAsync(string path)
     {
-        throw new NotImplementedException();
+        await Ch8Loader.LoadAsync(path, this.memory);
     }
 
     public void PressKey(int emulatorKey)
     {
-        throw new NotImplementedException();
+
     }
 
     public void ReleaseKey(int emulatorKey)
     {
-        throw new NotImplementedException();
+
     }
 
-    public void StartOrContinue(int v)
+    public void StartOrContinue(int instructionsPerSecond)
     {
-        throw new NotImplementedException();
+        this.isExecuting = true;
+
+        long ticksToSleepBetweenInstructions = this.AdjustTimingToMatchProvidedSpeed(instructionsPerSecond);
+
+        while (this.isExecuting)
+        {
+            Thread.Sleep(TimeSpan.FromTicks(ticksToSleepBetweenInstructions));
+            this.processor.ExecuteNextInstruction();
+        }
+    }
+
+    private long AdjustTimingToMatchProvidedSpeed(int instructionsPerSecond)
+    {
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        for (int instructionIndex = 0; instructionIndex < instructionsPerSecond; instructionIndex++)
+        {
+            this.processor.ExecuteNextInstruction();
+        }
+
+        long machineTicksElapsed = stopwatch.ElapsedTicks;
+
+        long ticksPerInstruction = (TimeSpan.TicksPerSecond - machineTicksElapsed) / instructionsPerSecond;
+
+        if (ticksPerInstruction < 0)
+        {
+            ticksPerInstruction = 0;
+        }
+
+        return ticksPerInstruction;
     }
 
     public void Tick()
     {
-        throw new NotImplementedException();
+
     }
 }

@@ -31,12 +31,12 @@ public class Emulator : IChip8Emulator
 
     public void PressKey(int emulatorKey)
     {
-
+        this.processor.PressKey(emulatorKey);
     }
 
     public void ReleaseKey(int emulatorKey)
     {
-
+        this.processor.ReleaseKey(emulatorKey);
     }
 
     public void StartOrContinue(int instructionsPerSecond)

@@ -96,6 +96,7 @@ internal class CPU
         switch (instruction)
         {
             case 0x0:
+                // No default because we ignore 0x0nnn instruction as it was only used in very old ROMs. But we don't want to throw on it.
                 switch (nnn)
                 {
                     case 0x0e0:
@@ -107,8 +108,6 @@ internal class CPU
                     case 0x0ee:
                         this.pc = this.stack.Pop();
                         break;
-                    default:
-                        throw new NotImplementedException();
                 }
                 break;
             case 0x1:
@@ -130,6 +129,12 @@ internal class CPU
                     this.pc += 2;
                 }
                 break;
+            case 0x5:
+                if (this.registers[x] == this.registers[y])
+                {
+                    this.pc += 2;
+                }
+                break;
             case 0x6:
                 this.registers[x] = kk;
                 break;
@@ -139,17 +144,56 @@ internal class CPU
             case 0x8:
                 switch (n)
                 {
-                    case 0x7:
-                        int result = this.registers[y] - this.registers[x];
+                    case 0x0:
+                        this.registers[x] = this.registers[y];
+                        break;
+                    case 0x1:
+                        this.registers[x] |= this.registers[y];
+                        break;
+                    case 0x2:
+                        this.registers[x] &= this.registers[y];
+                        break;
+                    case 0x3:
+                        this.registers[x] ^= this.registers[y];
+                        break;
+                    case 0x4:
+                        int result = this.registers[x] + this.registers[y];
+                        this.registers[0xf] = (byte)(result > 0xff ? 1 : 0);
+                        this.registers[x] = (byte)result;
+                        break;
+                    case 0x5:
+                        result = this.registers[x] - this.registers[y];
                         this.registers[0xf] = (byte)(result >= 0 ? 1 : 0);
                         this.registers[x] = (byte)result;
+                        break;
+                    case 0x6:
+                        this.registers[0xf] = (byte)(((this.registers[x] & 0x01) == 0x01) ? 1 : 0);
+                        this.registers[x] >>= 1;
+                        break;
+                    case 0x7:
+                        result = this.registers[y] - this.registers[x];
+                        this.registers[0xf] = (byte)(result >= 0 ? 1 : 0);
+                        this.registers[x] = (byte)result;
+                        break;
+                    case 0xe:
+                        this.registers[0xf] = (byte)((this.registers[x] & 0x80) == 0x80 ? 1 : 0);
+                        this.registers[x] <<= 1;
                         break;
                     default:
                         throw new NotImplementedException();
                 }
                 break;
+            case 0x9:
+                if (this.registers[x] != this.registers[y])
+                {
+                    this.pc += 2;
+                }
+                break;
             case 0xa:
                 this.i = nnn;
+                break;
+            case 0xb:
+                this.pc = (ushort)(nnn + this.registers[0x0]);
                 break;
             case 0xc:
                 this.registers[x] = (byte)(Random.Shared.Next() & kk);
@@ -157,9 +201,30 @@ internal class CPU
             case 0xd:
                 this.DrawSprite(x, y, n);
                 break;
+            case 0xe:
+                switch (kk)
+                {
+                    case 0x9e:
+                        if (this.keys[this.registers[x]])
+                        {
+                            this.pc += 2;
+                        }
+                        break;
+                    case 0xa1:
+                        if (!this.keys[this.registers[x]])
+                        {
+                            this.pc += 2;
+                        }
+                        break;
+
+                }
+                break;
             case 0xf:
                 switch (kk)
                 {
+                    case 0x07:
+                        this.registers[x] = this.delayTimer;
+                        break;
                     case 0x0a:
                         if (this.numberOfKeysPressed > 0)
                         {
@@ -169,6 +234,12 @@ internal class CPU
                         {
                             this.pc -= 2;
                         }
+                        break;
+                    case 0x15:
+                        this.delayTimer = this.registers[x];
+                        break;
+                    case 0x18:
+                        this.soundTimer = this.registers[x];
                         break;
                     case 0x1e:
                         uint result = (uint)(this.i + this.registers[x]);
@@ -180,6 +251,18 @@ internal class CPU
                         break;
                     case 0x29:
                         this.i = (ushort)(CPU.smallFontMemoryOffset + (this.registers[x] * CPU.smallFontHeight));
+                        break;
+                    case 0x33:
+                        byte vx = this.registers[x];
+                        this.memory[this.i] = (byte)(vx / 100);
+                        this.memory[this.i + 1] = (byte)(vx / 10 % 10);
+                        this.memory[this.i + 2] = (byte)(vx % 10);
+                        break;
+                    case 0x55:
+                        Array.Copy(this.registers, 0, this.memory, this.i, x + 1);
+                        break;
+                    case 0x65:
+                        Array.Copy(this.memory, this.i, this.registers, 0, x + 1);
                         break;
                     default:
                         throw new NotImplementedException();
@@ -206,6 +289,19 @@ internal class CPU
         {
             this.numberOfKeysPressed--;
             this.keys[key] = false;
+        }
+    }
+
+    public void Tick()
+    {
+        if (this.delayTimer > 0)
+        {
+            this.delayTimer--;
+        }
+
+        if (this.soundTimer > 0)
+        {
+            this.soundTimer--;
         }
     }
 

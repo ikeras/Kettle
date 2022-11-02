@@ -75,6 +75,6 @@ public class Emulator : IChip8Emulator
 
     public void Tick()
     {
-
+        this.processor.Tick();
     }
 }

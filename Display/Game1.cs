@@ -17,6 +17,9 @@ namespace Display
         private SpriteBatch spriteBatch;
         private Texture2D texture;
 
+        private int displayWidth;
+        private int displayHeight;
+
         private readonly List<Keys>[] emulatorKeyToKeys = new List<Keys>[]
         {
             new() { Keys.X }, // 0x0
@@ -61,8 +64,7 @@ namespace Display
         protected override void LoadContent()
         {
             this.spriteBatch = new SpriteBatch(this.GraphicsDevice);
-            this.CacluateDestRect();
-            this.texture = new Texture2D(this.GraphicsDevice, this.emulator.DisplayWidth, this.emulator.DisplayHeight, false, SurfaceFormat.Color);
+            this.UpdateDisplayDimensions();
         }
 
         protected override void Update(GameTime gameTime)
@@ -95,6 +97,11 @@ namespace Display
         {
             this.GraphicsDevice.Clear(Color.Black);
 
+            if (this.displayWidth != this.emulator.DisplayWidth || this.displayHeight != this.emulator.DisplayHeight)
+            {
+                this.UpdateDisplayDimensions();
+            }
+
             this.texture.SetData(this.emulator.GetDisplay());
             this.spriteBatch.Begin();
             this.spriteBatch.Draw(this.texture, this.destRect, Color.White);
@@ -105,15 +112,22 @@ namespace Display
 
         private void CacluateDestRect()
         {
-            int displayWidth = this.emulator.DisplayWidth;
-            int displayHeight = this.emulator.DisplayHeight;
-
-            double imageRatio = (double)displayWidth / displayHeight;
+            double imageRatio = (double)this.displayWidth / this.displayHeight;
             double windowRatio = (double)this.Window.ClientBounds.Width / this.Window.ClientBounds.Height;
 
-            (int destX, int destY) = windowRatio > imageRatio ? (displayWidth * this.Window.ClientBounds.Height / displayHeight, this.Window.ClientBounds.Height) : (this.Window.ClientBounds.Width, displayHeight * this.Window.ClientBounds.Height / displayWidth);
+            (int destX, int destY) = windowRatio > imageRatio ?
+                (this.displayWidth * this.Window.ClientBounds.Height / this.displayHeight, this.Window.ClientBounds.Height) :
+                (this.Window.ClientBounds.Width, this.displayHeight * this.Window.ClientBounds.Height / this.displayWidth);
 
             this.destRect = new Rectangle(0, 0, destX, destY);
+        }
+
+        private void UpdateDisplayDimensions()
+        {
+            this.displayHeight = this.emulator.DisplayHeight;
+            this.displayWidth = this.emulator.DisplayWidth;
+            this.CacluateDestRect();
+            this.texture = new Texture2D(this.GraphicsDevice, this.displayWidth, this.displayHeight, false, SurfaceFormat.Color);
         }
     }
 }

@@ -3,7 +3,9 @@
 internal class CPU
 {
     private const byte smallFontHeight = 5;
+    private const byte largeFontHeight = 10;
     private const ushort smallFontMemoryOffset = 0x00;
+    private const ushort largeFontMemoryOffset = 0x50;
 
     private static readonly byte[] smallFont = new byte[]
     {
@@ -25,12 +27,33 @@ internal class CPU
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
     };
 
+    private static readonly byte[] largeFont = new byte[]
+    {
+            0x7C, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x7C, 0x00, // 0
+            0x08, 0x18, 0x38, 0x08, 0x08, 0x08, 0x08, 0x08, 0x3C, 0x00, // 1
+            0x7C, 0x82, 0x02, 0x02, 0x04, 0x18, 0x20, 0x40, 0xFE, 0x00, // 2
+            0x7C, 0x82, 0x02, 0x02, 0x3C, 0x02, 0x02, 0x82, 0x7C, 0x00, // 3
+            0x84, 0x84, 0x84, 0x84, 0xFE, 0x04, 0x04, 0x04, 0x04, 0x00, // 4
+            0xFE, 0x80, 0x80, 0x80, 0xFC, 0x02, 0x02, 0x82, 0x7C, 0x00, // 5
+            0x7C, 0x82, 0x80, 0x80, 0xFC, 0x82, 0x82, 0x82, 0x7C, 0x00, // 6
+            0xFE, 0x02, 0x04, 0x08, 0x10, 0x20, 0x20, 0x20, 0x20, 0x00, // 7
+            0x7C, 0x82, 0x82, 0x82, 0x7C, 0x82, 0x82, 0x82, 0x7C, 0x00, // 8
+            0x7C, 0x82, 0x82, 0x82, 0x7E, 0x02, 0x02, 0x82, 0x7C, 0x00, // 9
+            0x10, 0x28, 0x44, 0x82, 0x82, 0xFE, 0x82, 0x82, 0x82, 0x00, // A
+            0xFC, 0x82, 0x82, 0x82, 0xFC, 0x82, 0x82, 0x82, 0xFC, 0x00, // B
+            0x7C, 0x82, 0x80, 0x80, 0x80, 0x80, 0x80, 0x82, 0x7C, 0x00, // C
+            0xFC, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0x82, 0xFC, 0x00, // D
+            0xFE, 0x80, 0x80, 0x80, 0xF8, 0x80, 0x80, 0x80, 0xFE, 0x00, // E
+            0xFE, 0x80, 0x80, 0x80, 0xF8, 0x80, 0x80, 0x80, 0x80, 0x00, // F
+    };
+
     private int displayWidth;
     private int displayHeight;
     private byte[] display;
     private readonly bool[] keys;
     private readonly byte[] memory;
 
+    private readonly byte[] persistedRegisters;
     private readonly byte[] registers;
     private ushort i;
     private int lastKeyPressed;
@@ -47,6 +70,7 @@ internal class CPU
         this.displayWidth = 64;
         this.keys = new bool[16];
         this.display = new byte[this.displayHeight * this.displayWidth];
+        this.persistedRegisters = new byte[16];
         this.registers = new byte[16];
         this.stack = new();
         this.soundTimer = 0;
@@ -57,6 +81,7 @@ internal class CPU
         this.pc = 0x200;
 
         Array.Copy(CPU.smallFont, 0, this.memory, CPU.smallFontMemoryOffset, CPU.smallFont.Length);
+        Array.Copy(CPU.largeFont, 0, this.memory, CPU.largeFontMemoryOffset, CPU.largeFont.Length);
     }
 
     public int DisplayWidth => this.displayWidth;
@@ -105,8 +130,23 @@ internal class CPU
                             Array.Clear(this.display);
                         }
                         break;
-                    case 0x0ee:
+                    case >= 0x00c0 and <= 0x00cf:
+                        this.ScrollDisplayDown(n);
+                        break;
+                    case 0x00ee:
                         this.pc = this.stack.Pop();
+                        break;
+                    case 0x00fb:
+                        this.ScrollDisplayRight();
+                        break;
+                    case 0x00fc:
+                        this.ScrollDisplayLeft();
+                        break;
+                    case 0x00fe:
+                        this.CreateDisplay(64, 32);
+                        break;
+                    case 0x00ff:
+                        this.CreateDisplay(128, 64);
                         break;
                 }
                 break;
@@ -216,7 +256,6 @@ internal class CPU
                             this.pc += 2;
                         }
                         break;
-
                 }
                 break;
             case 0xf:
@@ -252,6 +291,9 @@ internal class CPU
                     case 0x29:
                         this.i = (ushort)(CPU.smallFontMemoryOffset + (this.registers[x] * CPU.smallFontHeight));
                         break;
+                    case 0x30:
+                        this.i = (ushort)(CPU.largeFontMemoryOffset + (this.registers[x] * CPU.largeFontHeight));
+                        break;
                     case 0x33:
                         byte vx = this.registers[x];
                         this.memory[this.i] = (byte)(vx / 100);
@@ -263,6 +305,12 @@ internal class CPU
                         break;
                     case 0x65:
                         Array.Copy(this.memory, this.i, this.registers, 0, x + 1);
+                        break;
+                    case 0x75:
+                        Array.Copy(this.registers, 0, this.persistedRegisters, 0, 16);
+                        break;
+                    case 0x85:
+                        Array.Copy(this.persistedRegisters, 0, this.registers, 0, 16);
                         break;
                     default:
                         throw new NotImplementedException();
@@ -305,20 +353,30 @@ internal class CPU
         }
     }
 
+    private void CreateDisplay(int width, int height)
+    {
+        this.displayHeight = height;
+        this.displayWidth = width;
+
+        this.display = new byte[this.displayWidth * this.displayHeight];
+    }
+
     private void DrawSprite(byte x, byte y, byte n)
     {
         int xStart = this.registers[x] % this.displayWidth;
         int yOffset = this.registers[y] % this.displayHeight;
         this.registers[0xf] = 0;
 
-        int spriteWidth = 8;
-        int spriteHeight = n;
+        int spriteWidth = n == 0 ? 16 : 8;
+        int spriteHeight = n == 0 ? 16 : n;
 
         lock (this.display)
         {
             for (int row = 0; row < spriteHeight; row++)
             {
-                int spriteRowData = this.memory[this.i + row];
+                int spriteRowData = n == 0 ?
+                    this.memory[this.i + (row * 2)] << 8 | this.memory[this.i + (row * 2) + 1] :
+                    this.memory[this.i + row];
                 int xOffset = xStart;
 
                 for (int bit = 0; bit < spriteWidth; bit++)
@@ -357,6 +415,33 @@ internal class CPU
                     break;
                 }
             }
+        }
+    }
+
+    private void ScrollDisplayDown(int rows)
+    {
+        int pixelsToMove = rows * this.displayWidth;
+        Array.Copy(this.display, 0, this.display, pixelsToMove, this.display.Length - pixelsToMove);
+        Array.Clear(this.display, 0, pixelsToMove);
+    }
+
+    private void ScrollDisplayLeft()
+    {
+        for (int row = 0; row < this.displayHeight; row++)
+        {
+            int rowOffset = row * this.displayWidth;
+            Array.Copy(this.display, rowOffset + 4, this.display, rowOffset, this.displayWidth - 4);
+            Array.Clear(this.display, rowOffset + (this.displayWidth - 4), 4);
+        }
+    }
+
+    private void ScrollDisplayRight()
+    {
+        for (int row = 0; row < this.displayHeight; row++)
+        {
+            int rowOffset = row * this.displayWidth;
+            Array.Copy(this.display, rowOffset, this.display, rowOffset + 4, this.displayWidth - 4);
+            Array.Clear(this.display, rowOffset, 4);
         }
     }
 }

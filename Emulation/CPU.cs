@@ -216,7 +216,7 @@ internal class CPU
                         this.registers[x] = (byte)result;
                         break;
                     case 0xe:
-                        this.registers[0xf] = (byte)((this.registers[x] & 0x80) == 0x80 ? 1 : 0);
+                        this.registers[0xf] = (byte)(this.registers[x] >> 7);
                         this.registers[x] <<= 1;
                         break;
                     default:

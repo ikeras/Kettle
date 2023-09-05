@@ -103,7 +103,7 @@ namespace Display
             }
 
             this.texture.SetData(this.emulator.GetDisplay());
-            this.spriteBatch.Begin();
+            this.spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
             this.spriteBatch.Draw(this.texture, this.destRect, Color.White);
             this.spriteBatch.End();
 
